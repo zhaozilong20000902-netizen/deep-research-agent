@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n';
 import type { Source } from '../page';
 import { sourceToBibtex } from '@/lib/citations';
+import { assessSourceAuthority } from '@/lib/source-authority';
 
 interface SourceCardProps {
   source: Source;
@@ -30,7 +31,7 @@ export function SourceCardImpl({
   onDelete,
   onRewrite,
 }: SourceCardProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showRewriteBox, setShowRewriteBox] = useState(false);
@@ -55,6 +56,7 @@ export function SourceCardImpl({
   }));
 
   const isAcademic = source.type === 'academic';
+  const authority = assessSourceAuthority(source);
   const href = isAcademic
     ? (source.doi ? `https://doi.org/${source.doi}` : undefined)
     : source.url;
@@ -226,6 +228,18 @@ export function SourceCardImpl({
             <Badge variant={isAcademic ? 'academic' : 'web'}>
               {isAcademic ? t.academic : t.web}
             </Badge>
+            <span
+              title={locale === 'zh' ? authority.descriptionZh : authority.descriptionEn}
+              className={`inline-flex max-w-full items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${
+                authority.level === 'high'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : authority.level === 'medium'
+                    ? 'border-amber-200 bg-amber-50 text-amber-800'
+                    : 'border-stone-200 bg-stone-50 text-stone-600'
+              }`}
+            >
+              {locale === 'zh' ? authority.labelZh : authority.labelEn}
+            </span>
             {/* Inline action chips — only show on hover so the panel stays clean */}
             {(editable || onRewrite) && (
               <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">

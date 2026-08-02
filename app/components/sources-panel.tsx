@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { SourceCard } from './source-card';
 import { useI18n } from '@/lib/i18n';
 import type { Source } from '../page';
+import { assessSourceAuthority } from '@/lib/source-authority';
 
 interface SourcesPanelProps {
   sources: Source[];
@@ -69,6 +70,10 @@ export function SourcesPanel({
 
   const academicCount = sources.filter(s => s.type === 'academic').length;
   const webCount = sources.length - academicCount;
+  const authorityCounts = sources.reduce((counts, source) => {
+    counts[assessSourceAuthority(source).level] += 1;
+    return counts;
+  }, { high: 0, medium: 0, review: 0 });
 
   const handleEnrichDoi = async () => {
     const doi = addForm.doi.trim();
@@ -148,6 +153,16 @@ export function SourcesPanel({
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
+          <p className="text-xs font-semibold text-emerald-950">{t.sourceAuthorityTitle}</p>
+          <p className="mt-1 text-[11px] leading-5 text-emerald-900/75">{t.sourceAuthorityHint}</p>
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-medium">
+            <span className="rounded-md bg-white/80 px-2 py-1 text-emerald-800">{t.authorityHigh} {authorityCounts.high}</span>
+            <span className="rounded-md bg-white/80 px-2 py-1 text-amber-800">{t.authorityMedium} {authorityCounts.medium}</span>
+            <span className="rounded-md bg-white/80 px-2 py-1 text-stone-600">{t.authorityReview} {authorityCounts.review}</span>
+          </div>
+        </div>
+
         {/* Add-source form */}
         {showAdd && (
           <div className="mb-3 p-3 rounded-lg border border-blue-200 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-900/10 space-y-2">
