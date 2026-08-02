@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { marked } from 'marked';
 import { useI18n } from '@/lib/i18n';
 import type { Source } from '@/app/page';
+import { renderSafeMarkdown } from '@/lib/safe-markdown';
 import {
   sourcesToBibtex,
   sourcesToRis,
@@ -127,7 +127,7 @@ export function ExportMenu({ report, sources, filename = 'research-report' }: Ex
         // Render markdown → HTML, then post-process to wrap [N] citations in
         // clickable <a href="#source-N"> links so the resulting PDF has
         // working internal jumps.
-        const rawHtml = marked.parse(cleaned) as string;
+        const rawHtml = renderSafeMarkdown(cleaned);
         const linked = injectCitationLinksForPrint(rawHtml, new Set(sources.map(s => s.citationNumber)));
         printReportAsPDF(linked, sources, filename, t.references);
       },

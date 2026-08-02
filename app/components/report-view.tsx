@@ -1,15 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { marked } from 'marked';
-
-marked.setOptions({ gfm: true, breaks: true });
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import { ExportMenu } from './export-menu';
 import { stripTrailingReferencesSection } from '@/lib/latex';
 import { formatReference } from '@/lib/citations';
+import { renderSafeMarkdown } from '@/lib/safe-markdown';
 import type { Source } from '../page';
 
 interface ReportViewProps {
@@ -135,10 +133,10 @@ export function ReportView({ content, isStreaming, sources = [], citationStyle =
   const renderedHtml = useMemo(() => {
     if (!content) return '';
     if (isStreaming || sources.length === 0) {
-      return marked.parse(content) as string;
+      return renderSafeMarkdown(content);
     }
     const cleaned = stripTrailingReferencesSection(content);
-    const raw = marked.parse(cleaned) as string;
+    const raw = renderSafeMarkdown(cleaned);
     const valid = new Set(sources.map(s => s.citationNumber));
     return injectCitationLinks(raw, valid);
   }, [content, isStreaming, sources]);
