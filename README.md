@@ -1,16 +1,16 @@
-# Vocational Teaching Research Agent
+# Xuzhou Economic and Trade Vocational Teaching Agent
 
-Multi-agent deep research assistant with human-in-the-loop sub-question confirmation, web search, academic search, iterative report generation, and project-based version management. Built on the OpenAI Agents SDK and deployed on EdgeOne Makers.
+An evidence-led teaching preparation agent for teachers at Jiangsu Xuzhou Economic and Trade Higher Vocational School. It reads textbook content from PDF, DOCX, PPTX, text, and Markdown files, then combines that material with verified web research to generate lesson inspiration or a school-format lesson plan.
 
 **Framework:** OpenAI Agents SDK · **Category:** Research · **Language:** TypeScript
-
-[![Deploy to EdgeOne Makers](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/makers/new?template=deep-research-edgeone&from=within&fromAgent=1&agentLang=typescript)
 
 ## Overview
 
 This project is an evidence-led teaching activity designer for vocational educators, not a general chat bot. It captures the real course, learner profile, lesson duration, class size, teaching framework, available materials, and classroom constraints before investigating evidence and producing a classroom-ready activity package.
 
 - Structured teaching context instead of a single generic chat box
+- Browser-side textbook text extraction, so original files are not sent directly
+- School-format lesson plans with editable A4 Word export
 - Teacher confirmation before evidence retrieval
 - Objective, activity, observable evidence, and assessment alignment
 - Ready-to-use activity scripts, differentiated tasks, rubrics, contingencies, and teacher checklists

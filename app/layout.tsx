@@ -3,8 +3,8 @@ import './globals.css';
 import { I18nProvider } from '@/lib/i18n';
 
 export const metadata: Metadata = {
-  title: '职教研创智能体',
-  description: '面向职业教育教师的证据驱动教学研究与课堂活动设计智能体',
+  title: '徐州经贸教学研创智能体',
+  description: '江苏省徐州经贸高等职业学校教师教材分析、教学灵感与教案生成智能体',
 };
 
 export default function RootLayout({

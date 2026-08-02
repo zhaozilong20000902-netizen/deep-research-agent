@@ -43,16 +43,22 @@ import { formatTeachingContext, type TeachingContext } from '../lib/teaching';
 const logger = createLogger('research');
 
 const TEACHING_CONTEXT_KEYS: (keyof TeachingContext)[] = [
+  'school',
   'course',
   'grade',
   'topic',
   'duration',
   'classSize',
+  'lessonNumber',
+  'lessonLocation',
+  'lessonForm',
   'learnerProfile',
   'framework',
   'taskType',
   'materials',
   'constraints',
+  'materialFileNames',
+  'materialContent',
 ];
 
 function sanitizeTeachingContext(value: unknown): Partial<TeachingContext> | undefined {
@@ -62,7 +68,8 @@ function sanitizeTeachingContext(value: unknown): Partial<TeachingContext> | und
   for (const key of TEACHING_CONTEXT_KEYS) {
     const field = source[key];
     if (typeof field === 'string' && field.trim()) {
-      result[key] = field.trim().slice(0, 5000);
+      const limit = key === 'materialContent' ? 90_000 : 5_000;
+      result[key] = field.trim().slice(0, limit);
     }
   }
   return Object.keys(result).length > 0 ? result : undefined;
@@ -105,6 +112,7 @@ async function* streamResearch(
       name: 'question-decomposer',
       instructions: `You are a vocational teaching-design investigator. Break the teacher's real classroom problem into focused investigation questions.
 Generate ${depth === 'quick' ? '2-3' : depth === 'deep' ? '5-7' : '3-5'} sub-questions that collectively cover:
+- The uploaded textbook or slide content, its knowledge structure, and the requested deliverable
 - Learner difficulty and prerequisite knowledge
 - Verifiable curriculum, policy, research, or industry-practice evidence
 - Objective, activity, and assessment alignment

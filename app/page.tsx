@@ -11,7 +11,6 @@ import { VersionSelector } from './components/version-selector';
 import { DiffView } from './components/diff-view';
 import { SubQuestionConfirm } from './components/sub-question-confirm';
 import { CitationCoverage } from './components/citation-coverage';
-import { LanguageToggle } from '@/components/ui/language-toggle';
 import { TokenUsage } from '@/components/ui/token-usage';
 import { useI18n } from '@/lib/i18n';
 import { normalizeAuthors } from '@/lib/citations';
@@ -170,7 +169,7 @@ export default function Home() {
         setProjects(p || []);
         setBlobWarning(null);
       } else if (res.status === 503) {
-        setBlobWarning('当前环境存储服务不可用，项目与对话记录无法保存。部署到 EdgeOne Makers 后将自动启用，无需配置任何环境变量。');
+        setBlobWarning('当前环境的项目存储服务不可用，本次生成仍可继续，但项目与对话记录不会保存。');
       }
     } catch {} finally {
       setProjectsLoading(false);
@@ -772,7 +771,7 @@ export default function Home() {
   return (
     <div className="min-h-[100dvh] flex bg-stone-100 text-stone-950">
       {/* Left Sidebar — Project List */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 transition-all overflow-hidden fixed top-0 left-0 h-screen z-20`}>
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 border-r border-neutral-200 bg-neutral-50 transition-all overflow-hidden fixed top-0 left-0 h-[100dvh] z-20`}>
         <div className="w-64 h-full flex flex-col p-4">
           <ProjectSelector
             projects={projects}
@@ -821,7 +820,6 @@ export default function Home() {
 
             <div className="ml-auto flex items-center gap-3">
               <TokenUsage inputTokens={tokenUsage.input} outputTokens={tokenUsage.output} />
-              <LanguageToggle />
             </div>
           </div>
         </header>
@@ -847,7 +845,7 @@ export default function Home() {
           {!report && !pendingSubQuestions && !isResearching && !loadingVersion && (!selectedProjectId || versions.length === 0) && (
             <>
               {selectedProjectId && versions.length === 0 && (
-                <div className="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm flex items-center gap-3">
+                <div className="mb-6 flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
                   <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -994,7 +992,13 @@ export default function Home() {
                 )}
               </aside>
               <div className="lg:col-span-8">
-                <ReportView content={report} isStreaming={isResearching} sources={sources} citationStyle={citationStyle} />
+                <ReportView
+                  content={report}
+                  isStreaming={isResearching}
+                  sources={sources}
+                  citationStyle={citationStyle}
+                  filename={selectedProject?.name || '徐州经贸课程授课教案'}
+                />
               </div>
             </div>
           )}

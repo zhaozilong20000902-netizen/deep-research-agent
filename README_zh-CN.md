@@ -1,16 +1,17 @@
-# 职教研创智能体
+# 徐州经贸教学研创智能体
 
-面向职业院校教师的证据型教学活动设计 Agent。它把课程、学情、课时、班额、教学框架、已有材料和现实约束作为结构化输入，经过教师确认后检索证据，最终生成可直接备课使用的教学活动包。基于 OpenAI Agents SDK 构建，部署在 EdgeOne Makers。
+面向江苏省徐州经贸高等职业学校教师的教材分析与教学活动设计 Agent。教师可以上传教材 PDF、Word、PPT 或文本材料，结合联网搜索生成教学灵感、课堂任务、评价量规或符合学校模板结构的课程授课教案。
 
 **Framework:** OpenAI Agents SDK · **Category:** Research · **Language:** TypeScript
-
-[![部署到 EdgeOne Makers](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/makers/new?template=deep-research-edgeone&from=within&fromAgent=1&agentLang=typescript)
 
 ## 概述
 
 本项目不是通用聊天机器人。它运行一条教师主导的研创管线：先采集真实教学情境，再把课堂问题拆解为待核验事项，从开放网络与学术数据库收集依据，最后生成目标、活动、证据与评价对齐的教学活动包。教师可继续讨论并进行版本化优化。
 
 - **真实教学画像**：课程、教学主题、课时、班额、学情、教学框架、材料和约束独立录入，不把关键信息埋在聊天里。
+- **教材文件读取**：在浏览器中提取 PDF、DOCX、PPTX、TXT 和 Markdown 的文字，原文件不直接上传。
+- **学校格式教案**：按照“教案首页 + 七列表格教学设计”的徐州经贸模板生成，可导出 A4 宋体 Word 文件。
+- **多种教学成果**：支持教学灵感、学校格式教案、教学能力大赛优化、课堂活动与任务单、评价任务与量规。
 - **教师确认式拆解**：围绕学情难点、教学依据、目标与评价对齐、课堂风险生成调查问题，教师确认后才继续。
 - **双源证据检索**：联网搜索（腾讯云 Web Search API）与学术搜索（CrossRef + Semantic Scholar）共同支撑设计理由。
 - **课堂可执行交付**：固定输出教学任务画像、依据、目标与达成证据、分时流程、活动脚本、分层评价、应变方案和教师行动清单。
@@ -26,7 +27,7 @@
 | `AI_GATEWAY_MODEL` | 否 | 模型 ID，默认为 `@makers/deepseek-v4-flash`。 |
 | `WSA_API_KEY` | 否 | 腾讯云 Web Search API（WSA）Key，用于平台内置 `web_search` 工具。未配置时联网搜索将回退到稳定性较差的方案。 |
 
-本模板遵循 OpenAI 兼容标准 —— 可指向 Makers Models 或任何兼容提供商。
+本模板遵循 OpenAI 兼容标准，可指向 Makers Models 或任何兼容提供商。
 
 ### 如何获取 AI_GATEWAY_API_KEY
 

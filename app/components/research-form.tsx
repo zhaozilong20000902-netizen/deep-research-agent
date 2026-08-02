@@ -4,10 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import {
+  SCHOOL_NAME,
   TEACHING_FRAMEWORKS,
   TEACHING_TASK_TYPES,
   type TeachingContext,
 } from '@/lib/teaching';
+import { combineTeachingMaterials, type ParsedTeachingMaterial } from '@/lib/material-reader';
+import { MaterialUploader } from './material-uploader';
 
 const DEPTH_OPTIONS = [
   { value: 'quick', labelKey: 'quick' as const },
@@ -41,17 +44,24 @@ export function ResearchForm({ onSubmit, isLoading }: ResearchFormProps) {
   const [question, setQuestion] = useState('');
   const [depth, setDepth] = useState('standard');
   const [citationStyle, setCitationStyle] = useState<CitationStyle>('gb7714');
+  const [parsedMaterials, setParsedMaterials] = useState<ParsedTeachingMaterial[]>([]);
   const [context, setContext] = useState<TeachingContext>({
+    school: SCHOOL_NAME,
     course: locale === 'zh' ? '智慧仓配运营' : 'Smart Warehousing Operations',
-    grade: locale === 'zh' ? '职业院校' : 'Vocational college',
+    grade: '',
     topic: '',
     duration: locale === 'zh' ? '2课时' : '2 lessons',
     classSize: '30',
+    lessonNumber: '',
+    lessonLocation: '',
+    lessonForm: '',
     learnerProfile: '',
     framework: locale === 'zh' ? '三阶六步' : 'Task-based learning',
-    taskType: locale === 'zh' ? '完整教学活动设计' : 'Complete teaching activity plan',
+    taskType: locale === 'zh' ? '教学灵感与活动建议' : 'Teaching inspiration and activity ideas',
     materials: '',
     constraints: '',
+    materialFileNames: '',
+    materialContent: '',
   });
 
   const updateContext = (field: keyof TeachingContext, value: string) => {
@@ -60,15 +70,21 @@ export function ResearchForm({ onSubmit, isLoading }: ResearchFormProps) {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!question.trim() || !context.topic.trim() || isLoading) return;
-    onSubmit(question.trim(), depth, citationStyle, context);
+    if ((!question.trim() && parsedMaterials.length === 0) || !context.topic.trim() || isLoading) return;
+    const materialContent = combineTeachingMaterials(parsedMaterials).slice(0, 90_000);
+    const effectiveQuestion = question.trim() || `请根据上传教材内容生成“${context.taskType}”，重点围绕“${context.topic}”，严格区分教材事实、网络依据和教学设计建议。`;
+    onSubmit(effectiveQuestion, depth, citationStyle, {
+      ...context,
+      materialFileNames: parsedMaterials.map((material) => material.name).join('、'),
+      materialContent,
+    });
   };
 
   return (
     <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_20px_70px_rgba(28,45,38,0.08)]">
       <div className="grid border-b border-stone-200 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="bg-emerald-950 px-6 py-7 text-stone-50 sm:px-8">
-          <p className="text-sm font-semibold text-emerald-200">{t.teachingWorkbench}</p>
+          <p className="text-sm font-semibold text-emerald-200">{SCHOOL_NAME}</p>
           <h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
             {t.teachingHeroTitle}
           </h2>
@@ -100,7 +116,7 @@ export function ResearchForm({ onSubmit, isLoading }: ResearchFormProps) {
             </label>
             <label className="space-y-2 text-sm font-medium text-stone-800">
               <span>{t.gradeLevel}</span>
-              <input value={context.grade} onChange={(e) => updateContext('grade', e.target.value)} className={inputClassName} disabled={isLoading} />
+              <input value={context.grade} onChange={(e) => updateContext('grade', e.target.value)} placeholder="例如：物工高职241班" className={inputClassName} disabled={isLoading} />
             </label>
             <label className="space-y-2 text-sm font-medium text-stone-800">
               <span>{t.teachingTopic}</span>
@@ -122,6 +138,18 @@ export function ResearchForm({ onSubmit, isLoading }: ResearchFormProps) {
                 ))}
               </select>
             </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>授课次序</span>
+              <input value={context.lessonNumber} onChange={(e) => updateContext('lessonNumber', e.target.value)} placeholder="例如：第1次" className={inputClassName} disabled={isLoading} />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>上课地点</span>
+              <input value={context.lessonLocation} onChange={(e) => updateContext('lessonLocation', e.target.value)} placeholder="例如：教室或实训室" className={inputClassName} disabled={isLoading} />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>授课形式</span>
+              <input value={context.lessonForm} onChange={(e) => updateContext('lessonForm', e.target.value)} placeholder="例如：理实一体" className={inputClassName} disabled={isLoading} />
+            </label>
           </div>
 
           <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -137,9 +165,17 @@ export function ResearchForm({ onSubmit, isLoading }: ResearchFormProps) {
         </fieldset>
 
         <fieldset className="border-t border-stone-200 pt-7">
+          <legend className="text-lg font-semibold text-stone-950">教材与课件</legend>
+          <p className="mt-1 text-sm text-stone-600">教材内容是教学设计的主要依据，网络搜索用于补充政策、行业实践和可核验案例。</p>
+          <div className="mt-4">
+            <MaterialUploader materials={parsedMaterials} onChange={setParsedMaterials} disabled={isLoading} />
+          </div>
+        </fieldset>
+
+        <fieldset className="border-t border-stone-200 pt-7">
           <legend className="text-lg font-semibold text-stone-950">{t.teachingTaskTitle}</legend>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {(locale === 'zh' ? TEACHING_TASK_TYPES : ['Complete activity plan', 'Competition lesson optimization', 'Class activity worksheet', 'Teaching game design', 'Assessment rubric']).map((item) => (
+            {(locale === 'zh' ? TEACHING_TASK_TYPES : ['Teaching inspiration', 'School-format lesson plan', 'Competition lesson optimization', 'Class activity worksheet', 'Assessment rubric']).map((item) => (
               <button
                 key={item}
                 type="button"
@@ -164,8 +200,8 @@ export function ResearchForm({ onSubmit, isLoading }: ResearchFormProps) {
               placeholder={t.inputPlaceholder}
               className={`${inputClassName} min-h-32 resize-y text-base leading-7`}
               disabled={isLoading}
-              required
             />
+            <span className="block text-xs font-normal text-stone-600">已经上传教材时可以留空，智能体会按所选成果自动生成。</span>
           </label>
           <label className="mt-4 block space-y-2 text-sm font-medium text-stone-800">
             <span>{t.realConstraints}</span>
@@ -203,7 +239,7 @@ export function ResearchForm({ onSubmit, isLoading }: ResearchFormProps) {
             </label>
           </div>
 
-          <Button type="submit" size="lg" disabled={!question.trim() || !context.topic.trim() || isLoading} className="whitespace-nowrap bg-emerald-800 text-white hover:bg-emerald-900">
+          <Button type="submit" size="lg" disabled={(!question.trim() && parsedMaterials.length === 0) || !context.topic.trim() || isLoading} className="whitespace-nowrap bg-emerald-800 text-white hover:bg-emerald-900">
             {isLoading ? t.researching : t.startResearch}
           </Button>
         </div>
