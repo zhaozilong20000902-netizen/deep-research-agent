@@ -45,13 +45,40 @@ configureTracingOnce();
 // ─── Model & Provider ────────────────────────────────────────────────────────
 
 /**
+ * OpenAI SDK expects a provider base URL (usually ending in `/v1`) and appends
+ * `/chat/completions` itself. Some deployment UIs store the full endpoint;
+ * accepting both forms prevents requests such as
+ * `/v1/chat/completions/chat/completions`, which providers answer with 404.
+ */
+export function normalizeGatewayBaseURL(value?: string): string {
+  const baseURL = (value || "https://ai-gateway.edgeone.link/v1")
+    .trim()
+    .replace(/\/+$/, "");
+
+  return baseURL.replace(/\/(?:chat\/completions|responses)$/i, "");
+}
+
+export function resolveGatewayModel(
+  env: Record<string, string | undefined>
+): string {
+  // MODEL_NAME is used by the original EdgeOne template. Keep supporting it
+  // so existing deployments do not silently fall back to a Makers-only model
+  // while pointing at a third-party gateway such as SiliconFlow.
+  return (
+    env.AI_GATEWAY_MODEL?.trim() ||
+    env.MODEL_NAME?.trim() ||
+    "@makers/deepseek-v4-flash"
+  );
+}
+
+/**
  * Create an OpenAI client bound to a particular request's env.
  * Caller passes `context.env`; we never read process.env here.
  */
 function createOpenAIClient(env: Record<string, string | undefined>): OpenAI {
   return new OpenAI({
     apiKey: env.AI_GATEWAY_API_KEY!,
-    baseURL: env.AI_GATEWAY_BASE_URL!,
+    baseURL: normalizeGatewayBaseURL(env.AI_GATEWAY_BASE_URL),
     defaultHeaders: {
       "X-Gateway-Timeout": "600",
     },
@@ -62,7 +89,7 @@ export function getModel(env: Record<string, string | undefined>): OpenAIChatCom
   const client = createOpenAIClient(env);
   return new OpenAIChatCompletionsModel(
     client,
-    env.AI_GATEWAY_MODEL || "@makers/deepseek-v4-flash",
+    resolveGatewayModel(env),
   );
 }
 
