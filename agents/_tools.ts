@@ -128,7 +128,7 @@ export const buildSearchLiterature = (context: any, registry: CitationRegistry) 
 
 export const buildSearchWeb = (context: any, registry: CitationRegistry) => tool({
   name: 'search_web',
-  description: 'Search the web for relevant articles. Call this ONCE with a focused query directly related to the research topic. The query should be specific and in the same language as the research question. Returns JSON with articles array — each article carries a "citationNumber" you MUST use for its inline [n] citations.',
+  description: 'Search the web for relevant articles, prioritizing official government, education, standards, public-institution, and original industry sources before general media or aggregators. Call this ONCE with a focused query directly related to the research topic. The query should be specific and in the same language as the research question. Returns JSON with articles array — each article carries a "citationNumber" you MUST use for its inline [n] citations.',
   parameters: z.object({
     query: z.string().describe("Search query — MUST be specific and directly related to the main research topic. Use the same language as the original question. Example: if topic is '315打假', query should be '315打假 消费者权益 央视晚会' NOT generic terms."),
   }),

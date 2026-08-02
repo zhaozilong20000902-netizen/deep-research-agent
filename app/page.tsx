@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { ResearchForm } from './components/research-form';
 import { ProgressTree } from './components/progress-tree';
 import { SourcesPanel } from './components/sources-panel';
@@ -423,7 +424,9 @@ export default function Home() {
     // Auto-create a project named after the research question when none is selected
     let effectiveProjectId = selectedProjectId;
     if (!effectiveProjectId) {
-      const projectLabel = `${teachingContext.course} - ${teachingContext.topic}`;
+      const projectLabel = [teachingContext.course, teachingContext.topic]
+        .filter(Boolean)
+        .join(' - ') || teachingContext.taskType || '教学任务';
       const truncatedName = projectLabel.length > 60 ? projectLabel.slice(0, 60) + '...' : projectLabel;
       effectiveProjectId = await createProject(truncatedName);
     }
@@ -803,9 +806,13 @@ export default function Home() {
               </svg>
             </button>
 
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-900 text-lg font-bold text-white">
-              教
-            </div>
+            <Image
+              src="/xzjm-logo.png"
+              alt="江苏省徐州经贸高等职业学校校徽"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-xl bg-white p-0.5 object-contain ring-1 ring-stone-200"
+            />
             <div className="min-w-0">
               <h1 className="text-lg font-semibold text-stone-950">{t.title}</h1>
               <p className="hidden text-xs text-stone-600 sm:block">{t.description}</p>
@@ -819,6 +826,9 @@ export default function Home() {
             )}
 
             <div className="ml-auto flex items-center gap-3">
+              <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-900 md:inline-flex">
+                {t.evidenceFirstTitle}
+              </span>
               <TokenUsage inputTokens={tokenUsage.input} outputTokens={tokenUsage.output} />
             </div>
           </div>

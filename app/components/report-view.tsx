@@ -8,6 +8,7 @@ import { ExportMenu } from './export-menu';
 import { stripTrailingReferencesSection } from '@/lib/latex';
 import { formatReference } from '@/lib/citations';
 import { renderSafeMarkdown } from '@/lib/safe-markdown';
+import { assessSourceAuthority } from '@/lib/source-authority';
 import type { Source } from '../page';
 
 interface ReportViewProps {
@@ -100,7 +101,7 @@ function injectCitationLinks(html: string, validNumbers: Set<number>): string {
 }
 
 export function ReportView({ content, isStreaming, sources = [], citationStyle = 'apa', filename = '徐州经贸课程授课教案' }: ReportViewProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [copied, setCopied] = useState(false);
   const [hover, setHover] = useState<CitationHover | null>(null);
@@ -314,6 +315,7 @@ export function ReportView({ content, isStreaming, sources = [], citationStyle =
               <ol className="space-y-2 list-none p-0 m-0">
                 {sortedSources.map((s) => {
                   const link = s.doi ? `https://doi.org/${s.doi}` : s.url;
+                  const authority = assessSourceAuthority(s);
                   return (
                     <li
                       key={s.citationNumber}
@@ -325,6 +327,18 @@ export function ReportView({ content, isStreaming, sources = [], citationStyle =
                       </span>
                       <span className="min-w-0">
                         {formatReference(s, citationStyle)}
+                        <span
+                          title={t.sourceAuthorityHint}
+                          className={`ml-2 inline-flex rounded-md border px-1.5 py-0.5 align-middle text-[10px] font-medium ${
+                            authority.level === 'high'
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                              : authority.level === 'medium'
+                                ? 'border-amber-200 bg-amber-50 text-amber-800'
+                                : 'border-stone-200 bg-stone-50 text-stone-600'
+                          }`}
+                        >
+                          {locale === 'zh' ? authority.labelZh : authority.labelEn}
+                        </span>
                         {link && (
                           <>
                             {' '}
