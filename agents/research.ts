@@ -38,8 +38,42 @@ import { buildResearchTools } from './_tools';
 import { buildSystemPrompt, type ResearchOptions } from './_prompts';
 import { streamFollowUpEdit } from './_follow-up';
 import { cleanReportStructure, stripStreamPreamble, validateCitations } from './_report-cleanup';
+import { formatTeachingContext, type TeachingContext } from '../lib/teaching';
 
 const logger = createLogger('research');
+
+const TEACHING_CONTEXT_KEYS: (keyof TeachingContext)[] = [
+  'school',
+  'course',
+  'grade',
+  'topic',
+  'duration',
+  'classSize',
+  'lessonNumber',
+  'lessonLocation',
+  'lessonForm',
+  'learnerProfile',
+  'framework',
+  'taskType',
+  'materials',
+  'constraints',
+  'materialFileNames',
+  'materialContent',
+];
+
+function sanitizeTeachingContext(value: unknown): Partial<TeachingContext> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const source = value as Record<string, unknown>;
+  const result: Partial<TeachingContext> = {};
+  for (const key of TEACHING_CONTEXT_KEYS) {
+    const field = source[key];
+    if (typeof field === 'string' && field.trim()) {
+      const limit = key === 'materialContent' ? 90_000 : 5_000;
+      result[key] = field.trim().slice(0, limit);
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
 
 // ─── Stream ──────────────────────────────────────────────────────────────────
 
@@ -54,7 +88,7 @@ async function* streamResearch(
   // Build per-request tool instances with this request's context closed over.
   const { decomposeQuestion, searchLiterature, searchWeb, scrapeUrls } = buildResearchTools(context);
 
-  const { depth, projectId, urls, previousReport, isFollowUp, confirmedSubQuestions, decomposeOnly } = opts;
+  const { depth, projectId, urls, previousReport, isFollowUp, confirmedSubQuestions, decomposeOnly, teachingContext, locale } = opts;
   // Runtime auto-injects `context.conversation_id` from the
   // `makers-conversation-id` HTTP header — single channel is enough
   // (SOP platform-conventions §"Headers").
@@ -76,13 +110,15 @@ async function* streamResearch(
 
     const decomposeAgent = new Agent({
       name: 'question-decomposer',
-      instructions: `You are a research question decomposer. Break the given research question into focused sub-questions.
-Generate ${depth === 'quick' ? '2-3' : depth === 'deep' ? '5-7' : '3-5'} sub-questions that cover:
-- Background and definitions
-- Current state of research
-- Key challenges and debates
-- Future directions and applications
-Write sub-questions in the same language as the input question.
+      instructions: `You are a vocational teaching-design investigator. Break the teacher's real classroom problem into focused investigation questions.
+Generate ${depth === 'quick' ? '2-3' : depth === 'deep' ? '5-7' : '3-5'} sub-questions that collectively cover:
+- The uploaded textbook or slide content, its knowledge structure, and the requested deliverable
+- Learner difficulty and prerequisite knowledge
+- Verifiable curriculum, policy, research, or industry-practice evidence
+- Objective, activity, and assessment alignment
+- Classroom sequence, resources, and differentiation
+- Implementation risks and observable evidence of learning
+Do not invent local student data or teaching outcomes. Write in the same language as the input.
 Call the decompose_question tool with your generated sub-questions.`,
       model: getModel(context.env),
       tools: [decomposeQuestion],
@@ -90,7 +126,8 @@ Call the decompose_question tool with your generated sub-questions.`,
     });
 
     try {
-      const result = await run(decomposeAgent, [{ role: 'user', content: question }] as any, {
+      const decomposeInput = `${question}\n\n${formatTeachingContext(teachingContext || {}, locale === 'en' ? 'en' : 'zh')}`;
+      const result = await run(decomposeAgent, [{ role: 'user', content: decomposeInput }] as any, {
         stream: true, signal, maxTurns: 10, modelSettings: { maxTokens: 4096 },
         ...(session ? { session } : {}),
       } as any) as any;
@@ -112,11 +149,17 @@ Call the decompose_question tool with your generated sub-questions.`,
 
       if (subQs.length === 0) {
         // Fallback
-        subQs = [
-          `What is the current state of "${question}"?`,
-          `What are the main challenges in "${question}"?`,
-          `What are the future directions for "${question}"?`,
-        ];
+        subQs = locale === 'en'
+          ? [
+            `What learner difficulty must the activity for "${question}" address?`,
+            `What verified teaching or industry-practice evidence should inform "${question}"?`,
+            `What observable evidence can demonstrate learning in "${question}"?`,
+          ]
+          : [
+            `“${question}”需要解决的真实学习困难是什么？`,
+            `哪些可核验的教学或行业实践依据能支撑“${question}”？`,
+            `用什么可观察证据判断学生在“${question}”中达成了目标？`,
+          ];
       }
 
       yield sseEvent({ type: 'subagent_lifecycle', status: 'complete', agent: 'question-decomposer', id: 'stage-1', content: JSON.stringify(subQs) });
@@ -353,13 +396,12 @@ Call the decompose_question tool with your generated sub-questions.`,
     if (!report || report.length === 0) break;
 
     const reportLower = report.toLowerCase();
-    const hasConclusion = reportLower.includes('## 结论') || reportLower.includes('## conclusion') ||
-      reportLower.includes('## 总结');
+    const hasFinalBoundary = reportLower.includes('## 证据边界') ||
+      reportLower.includes('## evidence boundaries');
 
-    // Report is complete if it has a conclusion AND is reasonably long. The
-    // model no longer writes a references section (the app generates it), so
-    // we no longer gate completion on one.
-    if (hasConclusion && report.length > 2000) {
+    // The package is complete when the required final evidence-boundary
+    // section is present and the output is substantial enough to be useful.
+    if (hasFinalBoundary && report.length > 2000) {
       logger.log(`Report appears complete (len=${report.length}). No continuation needed.`);
       break;
     }
@@ -370,19 +412,19 @@ Call the decompose_question tool with your generated sub-questions.`,
       break;
     }
 
-    logger.log(`Report incomplete (attempt ${attempt + 1}/${MAX_CONTINUATIONS}, len=${report.length}, hasConclusion=${hasConclusion}). Continuing...`);
+    logger.log(`Package incomplete (attempt ${attempt + 1}/${MAX_CONTINUATIONS}, len=${report.length}, hasFinalBoundary=${hasFinalBoundary}). Continuing...`);
 
     try {
       const continueAgent = new Agent({
         name: 'report-continuator',
-        instructions: `You are continuing an incomplete research report. The previous output was cut short. Continue writing from EXACTLY where it left off — do NOT add any prefix, greeting, or "continued from" note. Do NOT repeat any content that already exists. Complete ALL remaining sections following this exact structure: main body chapters → ## 结论 (or ## Conclusion). Do NOT write a references / 参考文献 section — the application generates it automatically. Keep all inline [n] citation numbers as-is; do NOT invent new numbers. Write in the same language as the existing content. Output ONLY the continuation text. Write as MUCH content as possible — aim for at least 2000 characters.`,
+        instructions: `You are continuing an incomplete vocational teaching activity package. Continue from exactly where it stopped. Do not add a prefix or repeat existing content. Complete all remaining sections and end with ## 证据边界 or ## Evidence boundaries. Preserve objective, activity, evidence, and assessment alignment. Do not invent student data, implementation results, standards, sources, or citation numbers. Do not write a references section because the application generates it. Output only the continuation in the same language as the package.`,
         model: getModel(context.env),
         tools: [],
         modelSettings: { maxTokens: 65536 },
       });
 
       const continueInput = [
-        { role: 'user' as const, content: `The following research report was cut short at ${report.length} characters. Continue writing from where it stopped. You MUST output substantial content (at least 2000 characters). Complete the report with all remaining sections and the conclusion. Do NOT write a references section:\n\n---\n${report.slice(-3000)}` },
+        { role: 'user' as const, content: `The following teaching activity package was cut short at ${report.length} characters. Continue from where it stopped and complete all required sections through the final evidence-boundaries section. Do not write a references section:\n\n---\n${report.slice(-3000)}` },
       ];
 
       const continueResult = await run(continueAgent, continueInput as any, {
@@ -448,7 +490,7 @@ Call the decompose_question tool with your generated sub-questions.`,
     // /project cloud-function reads). No HTTP/RPC call required.
     if (context.store) {
       const newVersion = await saveVersionToStore(context.store, projectId, {
-        question, depth, subQuestions, papers, articles, scrapedUrls, report, trigger: 'initial',
+        question, depth, teachingContext, subQuestions, papers, articles, scrapedUrls, report, trigger: 'initial',
       });
       if (newVersion) {
         logger.log(`Version saved for project ${projectId} as v${newVersion}`);
@@ -458,7 +500,7 @@ Call the decompose_question tool with your generated sub-questions.`,
   } else if (context?.store && report) {
     // Standalone (non-project) report — archive under conversationId
     await archiveStandaloneReport(context.store, conversationId, {
-      question, depth, subQuestions, papers, articles, scrapedUrls, report,
+      question, depth, teachingContext, subQuestions, papers, articles, scrapedUrls, report,
     });
   }
 
@@ -479,7 +521,7 @@ Call the decompose_question tool with your generated sub-questions.`,
 export async function onRequest(context: any) {
   const { request } = context;
   const body = request?.body ?? {};
-  const { message, question: questionField, depth = 'standard', projectId, urls, confirmedSubQuestions, decomposeOnly, locale, citationStyle } = body;
+  const { message, question: questionField, depth = 'standard', projectId, urls, confirmedSubQuestions, decomposeOnly, locale, citationStyle, teachingContext } = body;
   const question = message || questionField || '';
 
   if (!question) {
@@ -494,6 +536,7 @@ export async function onRequest(context: any) {
   let previousArticles: any[] = [];
   let previousScrapedUrls: any[] = [];
   let previousSubQuestions: string[] = [];
+  let previousTeachingContext: Partial<TeachingContext> | undefined;
   let isFollowUp = false;
 
   if (projectId && context.store) {
@@ -505,6 +548,7 @@ export async function onRequest(context: any) {
       previousArticles = Array.isArray(last.version.articles) ? last.version.articles : [];
       previousScrapedUrls = Array.isArray(last.version.scrapedUrls) ? last.version.scrapedUrls : [];
       previousSubQuestions = Array.isArray(last.version.subQuestions) ? last.version.subQuestions : [];
+      previousTeachingContext = sanitizeTeachingContext(last.version.teachingContext);
       logger.log(`Loaded follow-up context: report=${previousReport!.length}chars papers=${previousPapers.length} articles=${previousArticles.length} scraped=${previousScrapedUrls.length} subQs=${previousSubQuestions.length}`);
     }
   }
@@ -524,6 +568,7 @@ export async function onRequest(context: any) {
     decomposeOnly: !!decomposeOnly,
     locale,
     citationStyle,
+    teachingContext: sanitizeTeachingContext(teachingContext) || previousTeachingContext,
   };
   const generator = streamResearch(question, opts, context, signal);
   return createSSEResponse(generator, signal);

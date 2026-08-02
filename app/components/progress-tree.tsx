@@ -67,7 +67,7 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
       label: t.decomposingQuestion,
       status: stage1?.status ?? 'pending',
       input: t.nodeInQuestion,
-      output: subQuestions.length > 0 ? fmt(t.nodeOutSubQuestions, subQuestions.length) : t.nodeOutSubQuestions.replace('{n}', '—'),
+      output: subQuestions.length > 0 ? fmt(t.nodeOutSubQuestions, subQuestions.length) : t.nodeOutSubQuestions.replace('{n}', t.pipelineWaiting),
       detail: subQuestions.length > 0 ? <SubQuestionList questions={subQuestions} /> : null,
     },
     {
@@ -76,7 +76,7 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
       label: t.searchingLiterature,
       status: stage2?.status ?? 'pending',
       input: t.nodeInSubQuestions,
-      output: papers.length > 0 ? fmt(t.nodeOutPapers, papers.length) : t.nodeOutPapers.replace('{n}', '—'),
+      output: papers.length > 0 ? fmt(t.nodeOutPapers, papers.length) : t.nodeOutPapers.replace('{n}', t.pipelineWaiting),
       detail: null,
     },
     {
@@ -85,7 +85,7 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
       label: t.searchingWeb,
       status: stage3?.status ?? 'pending',
       input: t.nodeInSubQuestions,
-      output: articles.length > 0 ? fmt(t.nodeOutArticles, articles.length) : t.nodeOutArticles.replace('{n}', '—'),
+      output: articles.length > 0 ? fmt(t.nodeOutArticles, articles.length) : t.nodeOutArticles.replace('{n}', t.pipelineWaiting),
       detail: null,
     },
     {
@@ -110,8 +110,8 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
     }
     if (status === 'running') {
       return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse-dot" />
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse-dot" />
           {t.pipelineRunning}
         </span>
       );
@@ -127,8 +127,8 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
   return (
     <Card>
       <CardHeader>
-        <h3 className="font-serif text-sm font-semibold text-neutral-900 dark:text-warm-100 flex items-center gap-2">
-          <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-stone-900">
+          <svg className="w-4 h-4 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           {t.orchestrationPipeline}
@@ -140,7 +140,7 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
         {isActive && subagents.length > 0 && (
           <div className="mt-2 w-full h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-700 ease-out"
+              className="h-full rounded-full bg-emerald-700 transition-all duration-700 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -163,7 +163,7 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
                 <div
                   className={`rounded-lg border p-3 transition-colors ${
                     node.status === 'running'
-                      ? 'border-blue-300 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10'
+                      ? 'border-amber-300 bg-amber-50/70'
                       : node.status === 'complete'
                         ? 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900'
                         : 'border-dashed border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40'
@@ -172,7 +172,7 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
                   <div className="flex items-center gap-2">
                     <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
                       node.status === 'complete' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                        : node.status === 'running' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : node.status === 'running' ? 'bg-amber-100 text-amber-800'
                           : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500'
                     }`}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,7 +194,7 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
                     <span className={`px-1.5 py-0.5 rounded ${
                       node.status === 'pending'
                         ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500'
-                        : 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                        : 'bg-emerald-50 text-emerald-800'
                     }`}>
                       <span className="opacity-60">{t.pipelineOutput}:</span> {node.output}
                     </span>
@@ -207,7 +207,7 @@ export function ProgressTree({ subagents, isActive }: ProgressTreeProps) {
                 {index < nodes.length - 1 && (
                   <div className="flex justify-center py-1">
                     <svg
-                      className={`w-4 h-4 ${nodes[index].status === 'complete' ? 'text-purple-400 dark:text-purple-500' : 'text-neutral-300 dark:text-neutral-700'}`}
+                      className={`w-4 h-4 ${nodes[index].status === 'complete' ? 'text-emerald-600' : 'text-neutral-300 dark:text-neutral-700'}`}
                       fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />

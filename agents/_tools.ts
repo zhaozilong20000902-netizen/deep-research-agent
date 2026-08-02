@@ -42,11 +42,11 @@ export function createCitationRegistry(): CitationRegistry {
 
 export const buildDecomposeQuestion = () => tool({
   name: 'decompose_question',
-  description: 'Break a research question into focused sub-questions. You (the agent) should generate the sub-questions yourself based on the question and depth. Return them as a JSON string with a subQuestions array.',
+  description: 'Break a real teaching problem into focused investigation questions for evidence-led vocational teaching design. Return a JSON string with a subQuestions array.',
   parameters: z.object({
-    question: z.string().describe('The main research question'),
-    depth: z.enum(['quick', 'standard', 'deep']).describe('Research depth: quick (2-3 sub-questions), standard (3-5), deep (5-7)'),
-    subQuestions: z.array(z.string()).describe('The sub-questions YOU generated. Cover: background, current state, challenges, future directions. Write in same language as question.'),
+    question: z.string().describe('The teacher-provided classroom problem'),
+    depth: z.enum(['quick', 'standard', 'deep']).describe('Investigation depth: quick (2-3 questions), standard (3-5), deep (5-7)'),
+    subQuestions: z.array(z.string()).describe('Questions covering learner difficulty, verified evidence, activity and assessment alignment, differentiation, and classroom risks. Use the same language as the teacher.'),
   }),
   execute: async ({ question, subQuestions }) => {
     // The agent generates sub-questions via the parameters — no extra LLM call needed
@@ -56,9 +56,9 @@ export const buildDecomposeQuestion = () => tool({
     // Fallback
     return JSON.stringify({
       subQuestions: [
-        `What is the current state of "${question}"?`,
-        `What are the main challenges in "${question}"?`,
-        `What are the future directions for "${question}"?`,
+        `What learner difficulty must the teaching design for "${question}" address?`,
+        `What verified teaching or industry evidence should inform "${question}"?`,
+        `What observable evidence can demonstrate learning in "${question}"?`,
       ],
     });
   },

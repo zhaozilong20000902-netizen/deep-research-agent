@@ -1,20 +1,22 @@
-# 深度研究助手
+# 徐州经贸教学研创智能体
 
-多 Agent 深度研究助手，支持子问题人工确认、联网搜索、学术搜索、迭代报告生成与项目版本管理。基于 OpenAI Agents SDK 构建，部署在 EdgeOne Makers。
+面向江苏省徐州经贸高等职业学校教师的教材分析与教学活动设计 Agent。教师可以上传教材 PDF、Word、PPT 或文本材料，结合联网搜索生成教学灵感、课堂任务、评价量规或符合学校模板结构的课程授课教案。
 
 **Framework:** OpenAI Agents SDK · **Category:** Research · **Language:** TypeScript
 
-[![部署到 EdgeOne Makers](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/makers/new?template=deep-research-edgeone&from=within&fromAgent=1&agentLang=typescript)
-
 ## 概述
 
-本模板运行一条结构化研究管线：将用户问题分解为子问题，从开放网络与学术数据库收集证据，并合成一份带引用的研究报告。跟进聊天模式允许用户在已完成报告的基础上进行讨论与优化，无需重新执行搜索。
+本项目不是通用聊天机器人。它运行一条教师主导的研创管线：先采集真实教学情境，再把课堂问题拆解为待核验事项，从开放网络与学术数据库收集依据，最后生成目标、活动、证据与评价对齐的教学活动包。教师可继续讨论并进行版本化优化。
 
-- **人工确认式分解** —— Agent 先将研究问题拆分为子问题，等待用户确认后再继续。
-- **双源研究** —— 并行执行联网搜索（腾讯云 Web Search API）与学术搜索（CrossRef + Semantic Scholar），并对关键 URL 抓取详细内容。
-- **迭代报告生成** —— 合成 Agent 产出带内联引用的结构化研究报告；清理阶段验证引用格式。
-- **项目版本管理** —— 研究报告按项目保存，支持版本历史、差异对比与回滚。
-- **跟进聊天** —— 轻量级对话端点，基于已有报告回答问题或触发重新生成。
+- **真实教学画像**：课程、教学主题、课时、班额、学情、教学框架、材料和约束独立录入，不把关键信息埋在聊天里。
+- **教材文件读取**：在浏览器中提取 PDF、DOCX、PPTX、TXT 和 Markdown 的文字，原文件不直接上传。
+- **学校格式教案**：按照“教案首页 + 七列表格教学设计”的徐州经贸模板生成，可导出 A4 宋体 Word 文件。
+- **多种教学成果**：支持教学灵感、学校格式教案、教学能力大赛优化、课堂活动与任务单、评价任务与量规。
+- **教师确认式拆解**：围绕学情难点、教学依据、目标与评价对齐、课堂风险生成调查问题，教师确认后才继续。
+- **双源证据检索**：联网搜索（腾讯云 Web Search API）与学术搜索（CrossRef + Semantic Scholar）共同支撑设计理由。
+- **课堂可执行交付**：固定输出教学任务画像、依据、目标与达成证据、分时流程、活动脚本、分层评价、应变方案和教师行动清单。
+- **证据红线**：禁止编造学生数据、课堂成效、政策条文、课程标准、企业案例和文献；信息缺失时明确标记“待教师确认”。
+- **版本化迭代**：教学活动包按项目保存，支持历史版本、差异对比、回滚和后续精修。
 
 ## 环境变量
 
@@ -25,7 +27,7 @@
 | `AI_GATEWAY_MODEL` | 否 | 模型 ID，默认为 `@makers/deepseek-v4-flash`。 |
 | `WSA_API_KEY` | 否 | 腾讯云 Web Search API（WSA）Key，用于平台内置 `web_search` 工具。未配置时联网搜索将回退到稳定性较差的方案。 |
 
-本模板遵循 OpenAI 兼容标准 —— 可指向 Makers Models 或任何兼容提供商。
+本模板遵循 OpenAI 兼容标准，可指向 Makers Models 或任何兼容提供商。
 
 ### 如何获取 AI_GATEWAY_API_KEY
 
@@ -82,7 +84,8 @@ deep-research-agent/
 │   └── _logger.ts          # 云函数共享日志
 ├── app/                    # Next.js App Router 前端
 ├── lib/
-│   └── i18n.tsx            # 中 / 英翻译
+│   ├── i18n.tsx            # 中 / 英翻译
+│   └── teaching.ts         # 教学情境模型与可选框架
 └── edgeone.json            # EdgeOne 部署配置
 ```
 
@@ -95,20 +98,20 @@ deep-research-agent/
 
 ### 端到端流程
 
-1. **问题输入** —— 前端 POST `/research`，携带研究问题、深度级别和可选的项目 ID。
-2. **子问题分解** —— 分解 Agent 将问题拆分为聚焦的子问题（2–7 个，取决于深度）。前端展示这些子问题供用户确认。
-3. **用户确认** —— 用户编辑或确认子问题。前端再次 POST `/research`，携带 `confirmedSubQuestions` 进入完整研究模式。
-4. **并行研究** —— 研究 Agent 发起并行工具调用：
+1. **教学情境输入** —— 教师填写课程、学段、主题、课时、班额、真实学情、框架、材料、约束和希望解决的问题。
+2. **调查问题分解** —— Agent 从学情难点、教学依据、对齐关系和课堂风险等角度生成 2–7 个问题。
+3. **教师确认** —— 教师编辑或确认问题，再进入完整研创模式。
+4. **证据研究** —— Agent 调用两类工具：
    - **联网搜索**（`search_web`）通过平台 `web_search` 工具（腾讯云 WSA）。
    - **学术搜索**（`search_literature`）通过 CrossRef 和 Semantic Scholar API。
 5. **URL 抓取** —— 对联网搜索结果中的关键 URL，使用平台 `browser_fetch` 工具抓取详细内容。
-6. **报告合成** —— 合成 Agent 将所有来源整合为一份带内联引用的结构化研究报告。
-7. **清理与验证** —— 报告经过后处理（去除前言、验证引用、清理结构）。
-8. **持久化** —— 最终报告通过 `cloud-functions/project/` 保存为项目版本。
-9. **跟进聊天** —— 用户可以 POST `/chat`，基于已有报告进行提问或请求编辑，无需重新执行搜索。
+6. **教学活动包合成** —— Agent 将来源与教师输入整合为九段式课堂交付物，并保持目标、活动、证据、评价对齐。
+7. **清理与验证** —— 输出经过后处理，删除重复参考文献并剔除无效引用编号。
+8. **持久化** —— 教学情境与活动包一同保存为项目版本。
+9. **跟进精修** —— 教师可基于已有活动包询问可行性、调整脚本或优化评价，无需每次重新搜索。
 
 ### 关键路由与参数
-- `/research` —— 主研究端点。Body：`{ question, depth, projectId, confirmedSubQuestions?, decomposeOnly? }`。
+- `/research` —— 主研创端点。Body：`{ question, depth, projectId, teachingContext, confirmedSubQuestions?, decomposeOnly? }`。
 - `/chat` —— 基于已完成报告的跟进讨论。Body：`{ message, projectId, chatHistory, report }`。
 - `/stop` —— 中止活跃研究运行。Body：`{ conversation_id }`。
 - `/health` —— 存活探针（位于 `cloud-functions/`，不涉及 AI）。

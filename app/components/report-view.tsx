@@ -16,6 +16,7 @@ interface ReportViewProps {
   content: string;
   isStreaming: boolean;
   sources?: Source[];
+  filename?: string;
   /** Citation style for the app-generated References list. Defaults to APA. */
   citationStyle?: string;
 }
@@ -100,7 +101,7 @@ function injectCitationLinks(html: string, validNumbers: Set<number>): string {
   return root.innerHTML;
 }
 
-export function ReportView({ content, isStreaming, sources = [], citationStyle = 'apa' }: ReportViewProps) {
+export function ReportView({ content, isStreaming, sources = [], citationStyle = 'apa', filename = '徐州经贸课程授课教案' }: ReportViewProps) {
   const { t } = useI18n();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -270,7 +271,7 @@ export function ReportView({ content, isStreaming, sources = [], citationStyle =
                 </svg>
                 {copied ? t.copied : t.copy}
               </Button>
-              <ExportMenu report={content} sources={sources} />
+              <ExportMenu report={content} sources={sources} filename={filename} />
             </div>
           )}
         </div>

@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    --background: #fdf8f0;
-    --foreground: #1a1a1a;
+    --background: #f5f5f4;
+    --foreground: #1c1917;
   }
 
   .dark {
@@ -16,6 +16,7 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   }
 }
 
@@ -25,23 +26,23 @@
   }
 
   .source-card-academic {
-    @apply border-l-4 border-l-blue-400 dark:border-l-blue-500;
+    @apply border-l-4 border-l-emerald-700 dark:border-l-emerald-500;
   }
 
   .source-card-web {
-    @apply border-l-4 border-l-green-400 dark:border-l-green-500;
+    @apply border-l-4 border-l-emerald-500 dark:border-l-emerald-400;
   }
 
   .prose-research h1 {
-    @apply font-serif text-2xl font-bold mt-8 mb-4 text-neutral-900 dark:text-warm-100;
+    @apply text-2xl font-bold mt-8 mb-4 text-stone-950 dark:text-warm-100;
   }
 
   .prose-research h2 {
-    @apply font-serif text-xl font-semibold mt-6 mb-3 text-neutral-800 dark:text-warm-200;
+    @apply text-xl font-semibold mt-6 mb-3 text-stone-900 dark:text-warm-200;
   }
 
   .prose-research h3 {
-    @apply font-serif text-lg font-medium mt-4 mb-2 text-neutral-700 dark:text-warm-300;
+    @apply text-lg font-medium mt-4 mb-2 text-stone-800 dark:text-warm-300;
   }
 
   .prose-research p {
@@ -61,7 +62,7 @@
   }
 
   .prose-research a {
-    @apply text-blue-600 dark:text-blue-400 underline hover:no-underline;
+    @apply text-emerald-800 dark:text-emerald-400 underline hover:no-underline;
   }
 
   .prose-research blockquote {
@@ -122,11 +123,11 @@
 /* Citation links in the report body: hover preview + click-to-jump to the
    matching source card in the SourcesPanel. */
 .citation-link {
-  @apply inline-flex items-center text-blue-600 dark:text-blue-400 no-underline font-medium tabular-nums px-0.5 rounded transition-colors;
+  @apply inline-flex items-center text-emerald-800 dark:text-emerald-400 no-underline font-medium tabular-nums px-0.5 rounded transition-colors;
   cursor: pointer;
 }
 .citation-link:hover {
-  @apply bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 underline decoration-dotted;
+  @apply bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-300 underline decoration-dotted;
 }
 
 /* Ghost citations: numbers in the report that don't map to any source.

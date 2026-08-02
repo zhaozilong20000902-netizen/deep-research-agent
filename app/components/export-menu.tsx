@@ -15,6 +15,7 @@ import {
   printReportAsPDF,
   stripTrailingReferencesSection,
 } from '@/lib/latex';
+import { downloadSchoolLessonPlan } from '@/lib/school-docx';
 
 interface ExportMenuProps {
   report: string;
@@ -26,7 +27,8 @@ interface ExportMenuProps {
 interface MenuItem {
   label: string;
   description: string;
-  onSelect: () => void;
+  onSelect: () => void | Promise<void>;
+  requiresSources?: boolean;
 }
 
 /**
@@ -88,6 +90,11 @@ export function ExportMenu({ report, sources, filename = 'research-report' }: Ex
 
   const items: MenuItem[] = [
     {
+      label: t.exportSchoolDocx,
+      description: t.exportSchoolDocxDesc,
+      onSelect: () => downloadSchoolLessonPlan(report, filename),
+    },
+    {
       label: t.exportMarkdown,
       description: t.exportMarkdownDesc,
       onSelect: () => downloadText(report, `${filename}.md`, 'text/markdown'),
@@ -95,6 +102,7 @@ export function ExportMenu({ report, sources, filename = 'research-report' }: Ex
     {
       label: t.exportLatex,
       description: t.exportLatexDesc,
+      requiresSources: true,
       onSelect: () => {
         // Single self-contained .tex — the References block is hand-rolled
         // inside the document so users don't need a sidecar refs.bib file
@@ -128,16 +136,19 @@ export function ExportMenu({ report, sources, filename = 'research-report' }: Ex
       label: t.exportBibtex,
       description: t.exportBibtexDesc.replace('{n}', String(sources.length)),
       onSelect: () => downloadText(sourcesToBibtex(sources), `${filename}.bib`, 'application/x-bibtex'),
+      requiresSources: true,
     },
     {
       label: t.exportRis,
       description: t.exportRisDesc.replace('{n}', String(sources.length)),
       onSelect: () => downloadText(sourcesToRis(sources), `${filename}.ris`, 'application/x-research-info-systems'),
+      requiresSources: true,
     },
     {
       label: t.exportCslJson,
       description: t.exportCslJsonDesc.replace('{n}', String(sources.length)),
       onSelect: () => downloadText(sourcesToCslJson(sources), `${filename}.json`, 'application/vnd.citationstyles.csl+json'),
+      requiresSources: true,
     },
   ];
 
@@ -172,16 +183,11 @@ export function ExportMenu({ report, sources, filename = 'research-report' }: Ex
           </div>
           <div className="py-1">
             {items.map((item, i) => {
-              // Citation-only formats (BibTeX/RIS/CSL-JSON, last three) need
-              // sources. Everything else works with just the report body.
-              // LaTeX (.tex) also needs sources because it pairs with refs.bib.
-              const isCitationFormat = i >= items.length - 3;
-              const isLatex = i === 1;
-              const disabled = (isCitationFormat || isLatex) && !hasSources;
+              const disabled = Boolean(item.requiresSources && !hasSources);
               return (
                 <button
                   key={i}
-                  onClick={() => { if (!disabled) { item.onSelect(); setOpen(false); } }}
+                  onClick={() => { if (!disabled) { void item.onSelect(); setOpen(false); } }}
                   disabled={disabled}
                   className={`w-full text-left px-3 py-2 transition-colors ${
                     disabled
