@@ -3,8 +3,8 @@ import './globals.css';
 import { I18nProvider } from '@/lib/i18n';
 
 export const metadata: Metadata = {
-  title: 'Deep Research',
-  description: 'AI-powered deep research assistant with multi-agent orchestration',
+  title: '职教研创智能体',
+  description: '面向职业教育教师的证据驱动教学研究与课堂活动设计智能体',
 };
 
 export default function RootLayout({
@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen antialiased">
+    <html lang="zh-CN">
+      <body className="min-h-[100dvh] antialiased">
         <I18nProvider>{children}</I18nProvider>
       </body>
     </html>

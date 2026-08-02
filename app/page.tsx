@@ -10,12 +10,12 @@ import { FollowUpChat } from './components/follow-up-chat';
 import { VersionSelector } from './components/version-selector';
 import { DiffView } from './components/diff-view';
 import { SubQuestionConfirm } from './components/sub-question-confirm';
-import { DeployButtons } from './components/deploy-buttons';
 import { CitationCoverage } from './components/citation-coverage';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { TokenUsage } from '@/components/ui/token-usage';
 import { useI18n } from '@/lib/i18n';
 import { normalizeAuthors } from '@/lib/citations';
+import type { TeachingContext } from '@/lib/teaching';
 
 export interface SubagentEvent {
   id: string;
@@ -120,6 +120,7 @@ export default function Home() {
   const [pendingSubQuestions, setPendingSubQuestions] = useState<string[] | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState('');
   const [pendingDepth, setPendingDepth] = useState('standard');
+  const [pendingTeachingContext, setPendingTeachingContext] = useState<TeachingContext | null>(null);
   // Citation style chosen at the start of a research run, reused for follow-ups
   // and regenerations within the same session.
   const [citationStyle, setCitationStyle] = useState<string>('apa');
@@ -400,7 +401,12 @@ export default function Home() {
   }, [conversationId]);
 
   // Main research handler — Phase 1: decompose only, wait for user confirmation
-  const handleResearch = useCallback(async (question: string, depth: string, style: string) => {
+  const handleResearch = useCallback(async (
+    question: string,
+    depth: string,
+    style: string,
+    teachingContext: TeachingContext,
+  ) => {
     if (busyRef.current) return;
     busyRef.current = true;
     setIsResearching(true);
@@ -412,18 +418,28 @@ export default function Home() {
     setPendingSubQuestions(null);
     setPendingQuestion(question);
     setPendingDepth(depth);
+    setPendingTeachingContext(teachingContext);
     setCitationStyle(style);
 
     // Auto-create a project named after the research question when none is selected
     let effectiveProjectId = selectedProjectId;
     if (!effectiveProjectId) {
-      const truncatedName = question.length > 60 ? question.slice(0, 60) + '…' : question;
+      const projectLabel = `${teachingContext.course} - ${teachingContext.topic}`;
+      const truncatedName = projectLabel.length > 60 ? projectLabel.slice(0, 60) + '...' : projectLabel;
       effectiveProjectId = await createProject(truncatedName);
     }
 
     // Phase 1: decompose only
-    await streamResearch({ message: question, depth, projectId: effectiveProjectId || undefined, decomposeOnly: true, locale, citationStyle: style });
-  }, [selectedProjectId]);
+    await streamResearch({
+      message: question,
+      depth,
+      projectId: effectiveProjectId || undefined,
+      decomposeOnly: true,
+      locale,
+      citationStyle: style,
+      teachingContext,
+    });
+  }, [selectedProjectId, locale]);
 
   // Phase 2: user confirmed sub-questions, proceed with full research
   const handleConfirmSubQuestions = useCallback(async (confirmedQuestions: string[]) => {
@@ -443,8 +459,9 @@ export default function Home() {
       confirmedSubQuestions: confirmedQuestions,
       locale,
       citationStyle,
+      teachingContext: pendingTeachingContext || undefined,
     });
-  }, [selectedProjectId, pendingQuestion, pendingDepth, citationStyle]);
+  }, [selectedProjectId, pendingQuestion, pendingDepth, citationStyle, locale, pendingTeachingContext]);
 
   // Regenerate report (triggered from chat after user confirms)
   const handleRegenerate = useCallback(async (chatSummary: string) => {
@@ -735,6 +752,7 @@ export default function Home() {
                   scrapedUrls: [],
                   report: lastReport,
                   trigger: prevCount > 0 ? 'follow-up' : 'initial',
+                  teachingContext: body.teachingContext || undefined,
                 },
               }),
             });
@@ -752,7 +770,7 @@ export default function Home() {
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-[100dvh] flex bg-stone-100 text-stone-950">
       {/* Left Sidebar — Project List */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 transition-all overflow-hidden fixed top-0 left-0 h-screen z-20`}>
         <div className="w-64 h-full flex flex-col p-4">
@@ -771,49 +789,44 @@ export default function Home() {
       {sidebarOpen && <div className="w-64 flex-shrink-0" />}
 
       {/* Main Content */}
-      <main className="flex-1 min-h-screen overflow-y-auto">
+      <main className="flex-1 min-h-[100dvh] overflow-y-auto">
         {/* Header */}
-        <header className="border-b border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="px-6 py-4 flex items-center gap-3">
+        <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
+          <div className="px-6 py-3 flex items-center gap-3">
             {/* Sidebar toggle */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500"
+              className="p-2 rounded-lg hover:bg-stone-100 text-stone-600"
+              aria-label="切换教学项目侧栏"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-900 text-lg font-bold text-white">
+              教
             </div>
-            <h1 className="font-serif text-xl font-bold text-neutral-900 dark:text-warm-100">
-              {t.title}
-            </h1>
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold text-stone-950">{t.title}</h1>
+              <p className="hidden text-xs text-stone-600 sm:block">{t.description}</p>
+            </div>
 
             {/* Current project name */}
             {selectedProject && (
-              <span className="text-sm text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full truncate max-w-48">
+              <span className="hidden max-w-56 truncate rounded-lg border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm text-stone-700 md:block">
                 {selectedProject.name}
               </span>
             )}
 
             <div className="ml-auto flex items-center gap-3">
-              <DeployButtons
-                templateSlug="deep-research-agent"
-                githubUrl="https://github.com/edgeone-pages-test/deep-research-agent"
-                lang={locale}
-              />
               <TokenUsage inputTokens={tokenUsage.input} outputTokens={tokenUsage.output} />
               <LanguageToggle />
             </div>
           </div>
         </header>
 
-        <div className="max-w-6xl mx-auto px-6 py-8 min-h-[70vh]">
+        <div className="mx-auto min-h-[70vh] max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
           {/* Blob storage warning */}
           {blobWarning && (
             <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
@@ -863,7 +876,12 @@ export default function Home() {
             <SubQuestionConfirm
               questions={pendingSubQuestions}
               onConfirm={handleConfirmSubQuestions}
-              onCancel={() => { setPendingSubQuestions(null); setPendingQuestion(''); setPendingDepth('standard'); }}
+              onCancel={() => {
+                setPendingSubQuestions(null);
+                setPendingQuestion('');
+                setPendingDepth('standard');
+                setPendingTeachingContext(null);
+              }}
             />
           )}
 

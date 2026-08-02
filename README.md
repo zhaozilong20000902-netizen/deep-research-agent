@@ -1,4 +1,4 @@
-# Deep Research Agent
+# Vocational Teaching Research Agent
 
 Multi-agent deep research assistant with human-in-the-loop sub-question confirmation, web search, academic search, iterative report generation, and project-based version management. Built on the OpenAI Agents SDK and deployed on EdgeOne Makers.
 
@@ -8,7 +8,13 @@ Multi-agent deep research assistant with human-in-the-loop sub-question confirma
 
 ## Overview
 
-This template runs a structured research pipeline that breaks a user question into sub-questions, gathers evidence from both the open web and academic databases, and synthesizes a cited research report. A follow-up chat mode lets users discuss and refine completed reports without re-running searches.
+This project is an evidence-led teaching activity designer for vocational educators, not a general chat bot. It captures the real course, learner profile, lesson duration, class size, teaching framework, available materials, and classroom constraints before investigating evidence and producing a classroom-ready activity package.
+
+- Structured teaching context instead of a single generic chat box
+- Teacher confirmation before evidence retrieval
+- Objective, activity, observable evidence, and assessment alignment
+- Ready-to-use activity scripts, differentiated tasks, rubrics, contingencies, and teacher checklists
+- A strict evidence boundary that forbids fabricated student data, classroom outcomes, standards, policies, cases, literature, or URLs
 
 - **Human-in-the-Loop Decomposition** — The agent first breaks the research question into sub-questions and waits for user confirmation before proceeding.
 - **Dual-Source Research** — Parallel web search (Tencent Cloud Web Search API) and academic search (CrossRef + Semantic Scholar) with URL scraping for detailed content.

@@ -3,190 +3,211 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
+import {
+  TEACHING_FRAMEWORKS,
+  TEACHING_TASK_TYPES,
+  type TeachingContext,
+} from '@/lib/teaching';
 
 const DEPTH_OPTIONS = [
-  { value: 'quick', labelKey: 'quick' as const, description: '' },
-  { value: 'standard', labelKey: 'standard' as const, description: '' },
-  { value: 'deep', labelKey: 'deep' as const, description: '' },
+  { value: 'quick', labelKey: 'quick' as const },
+  { value: 'standard', labelKey: 'standard' as const },
+  { value: 'deep', labelKey: 'deep' as const },
 ];
 
-// Academic citation styles. The model gets style-specific instructions in
-// the system prompt — see _prompts.ts buildSystemPrompt's citationStyle block.
 const CITATION_STYLES = [
+  { value: 'gb7714', label: 'GB/T 7714' },
   { value: 'apa', label: 'APA' },
   { value: 'mla', label: 'MLA' },
   { value: 'chicago', label: 'Chicago' },
-  { value: 'gb7714', label: 'GB/T 7714' },
 ] as const;
 
 export type CitationStyle = (typeof CITATION_STYLES)[number]['value'];
 
-interface HistoryItem {
-  id: string;
-  question: string;
-  depth: string;
-  createdAt: string;
-}
-
 interface ResearchFormProps {
-  onSubmit: (question: string, depth: string, citationStyle: CitationStyle) => void;
+  onSubmit: (
+    question: string,
+    depth: string,
+    citationStyle: CitationStyle,
+    teachingContext: TeachingContext,
+  ) => void;
   isLoading: boolean;
-  history?: HistoryItem[];
-  onLoadReport?: (id: string) => void;
 }
 
-export function ResearchForm({ onSubmit, isLoading, history = [], onLoadReport }: ResearchFormProps) {
-  const { t } = useI18n();
+const inputClassName = 'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-3 text-sm text-stone-900 placeholder:text-stone-500 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 disabled:opacity-60';
+
+export function ResearchForm({ onSubmit, isLoading }: ResearchFormProps) {
+  const { t, locale } = useI18n();
   const [question, setQuestion] = useState('');
   const [depth, setDepth] = useState('standard');
-  const [citationStyle, setCitationStyle] = useState<CitationStyle>('apa');
-  const [showHistory, setShowHistory] = useState(false);
-  const examplePrompts = t.examplePrompts;
+  const [citationStyle, setCitationStyle] = useState<CitationStyle>('gb7714');
+  const [context, setContext] = useState<TeachingContext>({
+    course: locale === 'zh' ? '智慧仓配运营' : 'Smart Warehousing Operations',
+    grade: locale === 'zh' ? '职业院校' : 'Vocational college',
+    topic: '',
+    duration: locale === 'zh' ? '2课时' : '2 lessons',
+    classSize: '30',
+    learnerProfile: '',
+    framework: locale === 'zh' ? '三阶六步' : 'Task-based learning',
+    taskType: locale === 'zh' ? '完整教学活动设计' : 'Complete teaching activity plan',
+    materials: '',
+    constraints: '',
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!question.trim() || isLoading) return;
-    onSubmit(question.trim(), depth, citationStyle);
+  const updateContext = (field: keyof TeachingContext, value: string) => {
+    setContext((current) => ({ ...current, [field]: value }));
   };
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!question.trim() || !context.topic.trim() || isLoading) return;
+    onSubmit(question.trim(), depth, citationStyle, context);
   };
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Question Input */}
-        <div className="relative">
-          <textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder={t.inputPlaceholder}
-            className="w-full h-28 px-5 py-4 rounded-xl border border-neutral-300 bg-white text-base placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:ring-warm-400 font-serif"
-            disabled={isLoading}
-          />
-        </div>
-
-        {/* Depth Selector + History + Submit */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
-              {DEPTH_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setDepth(opt.value)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    depth === opt.value
-                      ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
-                  }`}
-                  disabled={isLoading}
-                >
-                  <span>{t[opt.labelKey]}</span>
-                  {opt.description && <span className="ml-1 text-xs text-neutral-400 dark:text-neutral-500">{opt.description}</span>}
-                </button>
-              ))}
-            </div>
-
-            {/* Citation style — academic differentiator */}
-            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800">
-              <svg className="w-3.5 h-3.5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
-              <select
-                value={citationStyle}
-                onChange={(e) => setCitationStyle(e.target.value as CitationStyle)}
-                disabled={isLoading}
-                title={t.citationStyleLabel}
-                className="bg-transparent text-xs font-medium text-neutral-700 dark:text-neutral-300 focus:outline-none cursor-pointer disabled:opacity-50"
-              >
-                {CITATION_STYLES.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* History button */}
-            {history.length > 0 && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowHistory(!showHistory)}
-                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                    showHistory ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                  }`}
-                >
-                  <svg className="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {history.length}
-                </button>
-
-                {/* History dropdown */}
-                {showHistory && (
-                  <div className="absolute top-full left-0 mt-1 w-80 max-h-64 overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl z-20">
-                    {history.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => { onLoadReport?.(item.id); setShowHistory(false); }}
-                        className="w-full text-left px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 border-b border-neutral-100 dark:border-neutral-800 last:border-0 transition-colors"
-                      >
-                        <div className="text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">{item.question}</div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500">{item.depth}</span>
-                          <span className="text-[10px] text-neutral-400">{formatDate(item.createdAt)}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <Button type="submit" size="lg" disabled={!question.trim() || isLoading}>
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                {t.researching}
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                {t.startResearch}
-              </span>
-            )}
-          </Button>
-        </div>
-      </form>
-
-      {/* Example Prompts */}
-      {!isLoading && !question && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
-            {t.tryExample}
+    <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_20px_70px_rgba(28,45,38,0.08)]">
+      <div className="grid border-b border-stone-200 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="bg-emerald-950 px-6 py-7 text-stone-50 sm:px-8">
+          <p className="text-sm font-semibold text-emerald-200">{t.teachingWorkbench}</p>
+          <h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+            {t.teachingHeroTitle}
+          </h2>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-emerald-100">
+            {t.teachingHeroDescription}
           </p>
-          <div className="flex flex-wrap gap-2">
-            {examplePrompts.map((prompt, i) => (
-              <button
-                key={i}
-                onClick={() => setQuestion(prompt)}
-                className="text-sm px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors"
-              >
-                {prompt.length > 60 ? prompt.slice(0, 60) + '...' : prompt}
-              </button>
+        </div>
+        <div className="bg-stone-100 px-6 py-7 sm:px-8">
+          <p className="text-sm font-semibold text-stone-900">{t.deliveryStandard}</p>
+          <div className="mt-4 grid gap-3 text-sm text-stone-700">
+            {[t.standardEvidence, t.standardActivity, t.standardAssessment, t.standardChecklist].map((item) => (
+              <div key={item} className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-md bg-emerald-800 text-xs font-bold text-white">✓</span>
+                <span>{item}</span>
+              </div>
             ))}
           </div>
         </div>
-      )}
-    </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-8 px-6 py-7 sm:px-8">
+        <fieldset>
+          <legend className="text-lg font-semibold text-stone-950">{t.teachingContextTitle}</legend>
+          <p className="mt-1 text-sm text-stone-600">{t.teachingContextHint}</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>{t.courseName}</span>
+              <input value={context.course} onChange={(e) => updateContext('course', e.target.value)} className={inputClassName} disabled={isLoading} />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>{t.gradeLevel}</span>
+              <input value={context.grade} onChange={(e) => updateContext('grade', e.target.value)} className={inputClassName} disabled={isLoading} />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>{t.teachingTopic}</span>
+              <input value={context.topic} onChange={(e) => updateContext('topic', e.target.value)} placeholder={t.teachingTopicPlaceholder} className={inputClassName} disabled={isLoading} required />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>{t.lessonDuration}</span>
+              <input value={context.duration} onChange={(e) => updateContext('duration', e.target.value)} className={inputClassName} disabled={isLoading} />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>{t.classSize}</span>
+              <input value={context.classSize} onChange={(e) => updateContext('classSize', e.target.value)} className={inputClassName} disabled={isLoading} />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>{t.teachingFramework}</span>
+              <select value={context.framework} onChange={(e) => updateContext('framework', e.target.value)} className={inputClassName} disabled={isLoading}>
+                {(locale === 'zh' ? TEACHING_FRAMEWORKS : ['Task-based learning', 'Project-based learning', 'Scenario teaching', 'Case teaching']).map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>{t.learnerProfile}</span>
+              <textarea value={context.learnerProfile} onChange={(e) => updateContext('learnerProfile', e.target.value)} placeholder={t.learnerProfilePlaceholder} className={`${inputClassName} min-h-24 resize-y`} disabled={isLoading} />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-stone-800">
+              <span>{t.availableMaterials}</span>
+              <textarea value={context.materials} onChange={(e) => updateContext('materials', e.target.value)} placeholder={t.availableMaterialsPlaceholder} className={`${inputClassName} min-h-24 resize-y`} disabled={isLoading} />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="border-t border-stone-200 pt-7">
+          <legend className="text-lg font-semibold text-stone-950">{t.teachingTaskTitle}</legend>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {(locale === 'zh' ? TEACHING_TASK_TYPES : ['Complete activity plan', 'Competition lesson optimization', 'Class activity worksheet', 'Teaching game design', 'Assessment rubric']).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => updateContext('taskType', item)}
+                className={`min-h-16 rounded-xl border px-3 py-3 text-left text-sm font-medium transition-colors active:translate-y-px ${
+                  context.taskType === item
+                    ? 'border-emerald-800 bg-emerald-50 text-emerald-950'
+                    : 'border-stone-200 bg-white text-stone-700 hover:border-stone-400'
+                }`}
+                disabled={isLoading}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          <label className="mt-5 block space-y-2 text-sm font-medium text-stone-800">
+            <span>{t.problemToSolve}</span>
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder={t.inputPlaceholder}
+              className={`${inputClassName} min-h-32 resize-y text-base leading-7`}
+              disabled={isLoading}
+              required
+            />
+          </label>
+          <label className="mt-4 block space-y-2 text-sm font-medium text-stone-800">
+            <span>{t.realConstraints}</span>
+            <input value={context.constraints} onChange={(e) => updateContext('constraints', e.target.value)} placeholder={t.realConstraintsPlaceholder} className={inputClassName} disabled={isLoading} />
+          </label>
+
+          {!question && (
+            <div className="mt-5">
+              <p className="text-sm font-medium text-stone-700">{t.tryExample}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {t.examplePrompts.map((prompt) => (
+                  <button key={prompt} type="button" onClick={() => setQuestion(prompt)} className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-left text-sm text-stone-700 hover:border-emerald-700 hover:text-emerald-900">
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </fieldset>
+
+        <div className="flex flex-col gap-4 border-t border-stone-200 pt-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex rounded-xl bg-stone-100 p-1">
+              {DEPTH_OPTIONS.map((option) => (
+                <button key={option.value} type="button" onClick={() => setDepth(option.value)} className={`rounded-lg px-4 py-2 text-sm font-medium ${depth === option.value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-600'}`} disabled={isLoading}>
+                  {t[option.labelKey]}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-sm text-stone-700">
+              <span>{t.citationStyleLabel}</span>
+              <select value={citationStyle} onChange={(e) => setCitationStyle(e.target.value as CitationStyle)} className="rounded-lg border border-stone-300 bg-white px-3 py-2 font-medium" disabled={isLoading}>
+                {CITATION_STYLES.map((style) => <option key={style.value} value={style.value}>{style.label}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <Button type="submit" size="lg" disabled={!question.trim() || !context.topic.trim() || isLoading} className="whitespace-nowrap bg-emerald-800 text-white hover:bg-emerald-900">
+            {isLoading ? t.researching : t.startResearch}
+          </Button>
+        </div>
+      </form>
+    </section>
   );
 }

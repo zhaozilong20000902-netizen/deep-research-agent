@@ -48,10 +48,10 @@ export function SubQuestionConfirm({ questions, onConfirm, onCancel }: SubQuesti
   };
 
   return (
-    <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
+    <Card className="border-emerald-200 bg-emerald-50/60">
       <CardHeader>
-        <h3 className="font-serif text-base font-semibold text-neutral-900 dark:text-warm-100 flex items-center gap-2">
-          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h3 className="flex items-center gap-2 text-base font-semibold text-stone-900">
+          <svg className="w-5 h-5 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           {t.confirmSubQuestions}
@@ -76,7 +76,7 @@ export function SubQuestionConfirm({ questions, onConfirm, onCancel }: SubQuesti
                   e.target.style.height = '0px';
                   e.target.style.height = e.target.scrollHeight + 'px';
                 }}
-                className="flex-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/50 text-sm text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 resize-none transition-all leading-relaxed overflow-hidden"
+                className="flex-1 px-3 py-2 rounded-lg border border-stone-300 bg-white text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-700/30 focus:border-emerald-700 resize-none transition-all leading-relaxed overflow-hidden"
                 rows={1}
                 style={{ minHeight: '36px' }}
               />
@@ -95,7 +95,7 @@ export function SubQuestionConfirm({ questions, onConfirm, onCancel }: SubQuesti
           {/* Add button */}
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors px-2 py-1"
+            className="flex items-center gap-2 px-2 py-1 text-sm text-emerald-800 transition-colors hover:text-emerald-950"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -109,7 +109,7 @@ export function SubQuestionConfirm({ questions, onConfirm, onCancel }: SubQuesti
           <button
             onClick={handleConfirm}
             disabled={editableQuestions.filter(q => q.trim()).length === 0}
-            className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-300 dark:disabled:bg-neutral-700 text-white text-sm font-medium transition-colors flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-emerald-800 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-900 disabled:bg-neutral-300"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
